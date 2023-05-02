@@ -1,0 +1,12 @@
+Metadata-Version: 2.1
+Name: sodas
+Version: 0.0.1
+Summary: A library for implementing SODAS++ framework
+Home-page: https://github.com/Materials-Informatics-Laboratory/SODAS
+Author: James Chapman
+Author-email: jc112358@bu.edu
+Description-Content-Type: text/markdown
+License-File: LICENSE
+
+# SODAS
+Toolkit for the characterization of atomistic phase trajectories
