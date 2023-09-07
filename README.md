@@ -1,9 +1,8 @@
 # SODAS
 Toolkit for the characterization of atomistic phase trajectories
 
-![Screenshot](https://github.com/Materials-Informatics-Laboratory/SODAS/blob/main/image/sodas%2B%2B_workflow.png?raw=true)
+![Screenshot](https://github.com/Materials-Informatics-Laboratory/SODAS/blob/main/method.png?raw=true)
 
-image/sodas++_workflow.png
 ## Installation
 
 The following dependencies need to be installed before installing `sodas`. The installation time is typically within 10 minutes on a normal local machine.
