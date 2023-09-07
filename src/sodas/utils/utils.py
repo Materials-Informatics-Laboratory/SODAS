@@ -3,7 +3,7 @@ from scipy import stats
 import networkx as nx
 
 from graphite.data import AngularGraphPairData
-from graphite.utils.alignnd import *
+from graphite.utils.alignn import *
 from graphite.utils.graph import *
 
 __all__ = [
@@ -93,20 +93,33 @@ def nearest_path_node(x,nodes,distances):
 def generate_graph(atoms,graph_type='',cutoff=3.0):
     # Construct normal graph G
     if graph_type == 'ALIGNN':
-        edge_index_G, x_atm, x_bnd = atoms2graph(atoms, cutoff=cutoff, edge_dist=True)
+        edge_index_G, x_bnd = atoms2graph(atoms, cutoff=cutoff, edge_dist=True)
+        ohe = []
+        elements = np.unique(atoms.get_atomic_numbers())
+        for atom in atoms:
+            tx = [0.0] * len(elements)
+            for i in range(len(elements)):
+                if atom.number == elements[i]:
+                    tx[i] = 1.0
+                    break
+            ohe.append(tx)
+        ohe = np.array(ohe)
+        x_atm = ohe
         # Construct angular graph A
         edge_index_L_bnd_ang = line_graph(edge_index_G)
         x_bnd_ang = get_bnd_angs(atoms, edge_index_G, edge_index_L_bnd_ang)
         x_ang = np.concatenate([x_bnd_ang])
         edge_index_L = np.hstack([edge_index_L_bnd_ang])
+        mask_dih_ang = [False] * len(x_bnd_ang) + [False] * len(x_bnd_ang)
 
         # Store everything into the custom `AngularGraphPairData` data class
         data = AngularGraphPairData(
             edge_index_G=torch.tensor(edge_index_G, dtype=torch.long),
-            x_atm=torch.tensor(x_atm, dtype=torch.long),
+            x_atm=torch.tensor(x_atm, dtype=torch.float),
             x_bnd=torch.tensor(x_bnd, dtype=torch.float),
             edge_index_A=torch.tensor(edge_index_L, dtype=torch.long),
             x_ang=torch.tensor(x_ang, dtype=torch.float),
+            mask_dih_ang=torch.tensor(mask_dih_ang, dtype=torch.bool),
         )
 
     return data

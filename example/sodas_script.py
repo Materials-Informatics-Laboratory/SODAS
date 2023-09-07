@@ -1,4 +1,4 @@
-from graphite.nn.models import ALIGNN
+from graphite.nn.models.alignn import Encoder, Processor, Decoder, ALIGNN
 from umap import umap_
 
 from sodas.utils.utils import generate_latent_space_path
@@ -15,8 +15,8 @@ import os
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 
-read_path = r'PATH\TO\melt.dump'
-write_path = r'PATH\TO\melt.dump'
+read_path = r'path'
+write_path = r'path'
 test_file = r'melt.dump'
 sub_dir = 'melt'
 
@@ -26,13 +26,21 @@ test_file = os.path.join(read_path,test_file)
 
 traj = read(test_file,index=':')
 
-sodas_model = SODAS(mod=ALIGNN(dim=100, num_interactions=6, num_species=3, cutoff=3.0),
+gnn_dim=100
+alignn_cutoff=5.0
+gnn = ALIGNN(
+    encoder   = Encoder(num_species=1, cutoff=alignn_cutoff, dim=gnn_dim, dihedral=False),
+    processor = Processor(num_convs=5, dim=gnn_dim),
+    decoder   = Decoder(node_dim=gnn_dim,out_dim=10)
+)
+
+sodas_model = SODAS(mod=gnn,
                  ls_mod=umap_.UMAP(n_neighbors=10, min_dist=0.25,n_components=10))
 
 dataset = []
 for i, snapshot in enumerate(traj):
     print('Generating graph for snapshot ', i)
-    data = generate_graph(snapshot, graph_type='ALIGNN',cutoff=3.0)
+    data = generate_graph(snapshot, graph_type='ALIGNN',cutoff=alignn_cutoff)
     dataset.append(data)
     if i % save_frequency == 0:
         torch.save(dataset, os.path.join(write_path, sub_dir + '.pt'))
@@ -42,7 +50,7 @@ dataset = torch.load(os.path.join(write_path, sub_dir + '.pt'))
 follow_batch = ['x_atm', 'x_bnd', 'x_ang'] if hasattr(dataset[0], 'x_ang') else ['x_atm']
 loader = DataLoader(dataset, batch_size=1, shuffle=False, follow_batch=follow_batch)
 
-encoded_data = sodas_model.generate_gnn_latent_space(device='cuda',loader=loader)
+encoded_data = sodas_model.generate_gnn_latent_space(device='cpu',loader=loader)
 np.save(os.path.join(write_path,'total_gnn_encoding.npy'), encoded_data,allow_pickle=True)
 sodas_model.fit_umap(data=encoded_data)
 projected_data = sodas_model.project_data(data=encoded_data)
