@@ -33,3 +33,10 @@ pip uninstall sodas
 
 - The `src` folder contains the source code.
 - The `example` folder contains an example for how to use SODAS++ to characterize an Al melt molecular dynamics simulation.
+
+## Citing SODAS
+
+Please use the following citiation to cite the SODAS toolkit:
+Bamidele Aroboto, Shaohua Chen, Tim Hsu, Brandon C. Wood, Yang Jiao, James Chapman; Universal and interpretable classification of atomistic structural transitions via unsupervised graph learning. Appl. Phys. Lett. 28 August 2023; 123 (9): 094103.
+
+Or cite directly from the manuscript at: https://pubs.aip.org/aip/apl/article/123/9/094103/2909293/Universal-and-interpretable-classification-of
