@@ -8,8 +8,6 @@ Toolkit for the characterization of atomistic phase trajectories
 The following dependencies need to be installed before installing `sodas`. The installation time is typically within 10 minutes on a normal local machine.
 - PyTorch (`pytorch>=1.8.1`)
 - PyTorch-Geometric (`pyg>=2.0.1`): for implementing graph representations
-- LLNL/Graphite: for ALIGNN GNN representation (https://github.com/LLNL/graphite)
-- UMAP-learn (`umap-learn>=0.5.3`)
 - Networkx (`networkx>=2.8.6`)
 - Scipy (`scipy>=1.9.0`)
 - Numpy (`numpy>=1.21.1`)
