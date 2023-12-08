@@ -1,5 +1,7 @@
-from graphite.nn.models.alignn import Encoder, Processor, Decoder, ALIGNN
+from sodas.nn.models.alignn import Encoder, Processor, Decoder, ALIGNN
+
 from umap import umap_
+from sklearn.decomposition import PCA
 
 from sodas.utils.utils import generate_latent_space_path
 from sodas.utils.utils import generate_graph
@@ -15,44 +17,45 @@ import os
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 
-read_path = r'path'
-write_path = r'path'
-test_file = r'melt.dump'
+read_path = r"."
+write_path = r'.'
 sub_dir = 'melt'
 
 save_frequency = 500
+gen_graphs = 0
 
-test_file = os.path.join(read_path,test_file)
+traj = read(os.path.join(read_path,sub_dir + '.dump'),index=':')
 
-traj = read(test_file,index=':')
-
-gnn_dim=100
+gnn_dim=20
 alignn_cutoff=5.0
 gnn = ALIGNN(
-    encoder   = Encoder(num_species=1, cutoff=alignn_cutoff, dim=gnn_dim, dihedral=False),
+    encoder   = Encoder(num_species=1, cutoff=alignn_cutoff, dim=gnn_dim),
     processor = Processor(num_convs=5, dim=gnn_dim),
     decoder   = Decoder(node_dim=gnn_dim,out_dim=10)
 )
 
-sodas_model = SODAS(mod=gnn,
-                 ls_mod=umap_.UMAP(n_neighbors=10, min_dist=0.25,n_components=10))
+sodas_model = SODAS(mod=gnn,ls_mod=umap_.UMAP(n_neighbors=50, min_dist=0.1,n_components=10))
+                # ls_mod=PCA(n_components=10))
+                # if you wanted PCA use the commented-out command above
+                # swap in any dimensionality reduction technique of your choosing (you're not limited to umap or pca)
 
-dataset = []
-for i, snapshot in enumerate(traj):
-    print('Generating graph for snapshot ', i)
-    data = generate_graph(snapshot, graph_type='ALIGNN',cutoff=alignn_cutoff)
-    dataset.append(data)
-    if i % save_frequency == 0:
-        torch.save(dataset, os.path.join(write_path, sub_dir + '.pt'))
-torch.save(dataset, os.path.join(write_path, sub_dir + '.pt'))
+if gen_graphs:
+    dataset = []
+    for i, snapshot in enumerate(traj):
+        print('Generating graph for snapshot ', i,' of ',len(traj))
+        data = generate_graph(snapshot,cutoff=alignn_cutoff)
+        dataset.append(data)
+        if i % save_frequency == 0:
+            torch.save(dataset, os.path.join(write_path, sub_dir + '.pt'))
+    torch.save(dataset, os.path.join(write_path, sub_dir + '.pt'))
 
 dataset = torch.load(os.path.join(write_path, sub_dir + '.pt'))
 follow_batch = ['x_atm', 'x_bnd', 'x_ang'] if hasattr(dataset[0], 'x_ang') else ['x_atm']
 loader = DataLoader(dataset, batch_size=1, shuffle=False, follow_batch=follow_batch)
 
-encoded_data = sodas_model.generate_gnn_latent_space(device='cpu',loader=loader)
+encoded_data = sodas_model.generate_gnn_latent_space(loader=loader,device='cuda')
 np.save(os.path.join(write_path,'total_gnn_encoding.npy'), encoded_data,allow_pickle=True)
-sodas_model.fit_umap(data=encoded_data)
+sodas_model.fit_dim_red(data=encoded_data)
 projected_data = sodas_model.project_data(data=encoded_data)
 
 c = np.linspace(0,len(projected_data),len(projected_data))
@@ -69,7 +72,6 @@ mapper = mpl.cm.ScalarMappable(norm=norm, cmap=mpl.cm.viridis)
 
 nx.draw(path_data["graph"], pos,node_size=500, node_color=[mapper.to_rgba(i) for i in color_lookup.values()], with_labels=False,
         edge_color='black', edgecolors='k',alpha=0.75)
-plt.show()
 
 t = np.linspace(0, len(projected_data), len(projected_data))
 fig, (ax0,ax1) = plt.subplots(1, 2, figsize=(12, 4))

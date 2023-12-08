@@ -2,9 +2,14 @@ from scipy.spatial.distance import squareform, pdist
 from scipy import stats
 import networkx as nx
 
-from graphite.data import AngularGraphPairData
-from graphite.utils.alignn import *
-from graphite.utils.graph import *
+from sodas.utils.structure_properties import *
+from sodas.utils.alignn import *
+from sodas.utils.graph import atoms2graph
+from sodas.utils.graph import AngularGraphPairData
+import torch
+
+import numpy as np
+import pandas as pd
 
 __all__ = [
     'nearest_path_node',
@@ -90,36 +95,53 @@ def nearest_path_node(x,nodes,distances):
                 nd[-1] = distances[nodes.index(node)]
     return nn, nd
 
-def generate_graph(atoms,graph_type='',cutoff=3.0):
-    # Construct normal graph G
-    if graph_type == 'ALIGNN':
-        edge_index_G, x_bnd = atoms2graph(atoms, cutoff=cutoff, edge_dist=True)
-        ohe = []
-        elements = np.unique(atoms.get_atomic_numbers())
-        for atom in atoms:
-            tx = [0.0] * len(elements)
-            for i in range(len(elements)):
-                if atom.number == elements[i]:
-                    tx[i] = 1.0
-                    break
-            ohe.append(tx)
-        ohe = np.array(ohe)
-        x_atm = ohe
-        # Construct angular graph A
-        edge_index_L_bnd_ang = line_graph(edge_index_G)
-        x_bnd_ang = get_bnd_angs(atoms, edge_index_G, edge_index_L_bnd_ang)
-        x_ang = np.concatenate([x_bnd_ang])
-        edge_index_L = np.hstack([edge_index_L_bnd_ang])
-        mask_dih_ang = [False] * len(x_bnd_ang) + [False] * len(x_bnd_ang)
+def generate_graph(atoms,cutoff=3.0,dihedral=False):
+    """Converts ASE `atoms` into a PyG graph data holding the atomic graph (G) and the angular graph (A).
+        The angular graph holds bond angle information, but can also calculate dihedral information upon request.
+        """
 
-        # Store everything into the custom `AngularGraphPairData` data class
-        data = AngularGraphPairData(
+    elements = np.unique(atoms.get_chemical_symbols())
+    ohe = []
+    for atom in atoms:
+        tx = [0.0] * len(elements)
+        for i in range(len(elements)):
+            if atom.number == elements[i]:
+                tx[i] = 1.0
+                break
+        ohe.append(tx)
+    x_atm = np.array(ohe)
+
+    edge_index_G, x_bnd = atoms2graph(atoms, cutoff=cutoff)
+    edge_index_bnd_ang = line_graph(edge_index_G)
+    x_bnd_ang = get_bnd_angs(atoms, edge_index_G, edge_index_bnd_ang)
+
+    if dihedral:
+        edge_index_dih_ang = dihedral_graph(edge_index_G)
+        edge_index_A = np.hstack([edge_index_bnd_ang, edge_index_dih_ang])
+        x_dih_ang = get_dih_angs(atoms, edge_index_G, edge_index_dih_ang)
+        x_ang = np.concatenate([x_bnd_ang, x_dih_ang])
+        mask_dih_ang = [False] * len(x_bnd_ang) + [True] * len(x_dih_ang)
+
+        data = MolData(
             edge_index_G=torch.tensor(edge_index_G, dtype=torch.long),
+            edge_index_A=torch.tensor(edge_index_A, dtype=torch.long),
             x_atm=torch.tensor(x_atm, dtype=torch.float),
             x_bnd=torch.tensor(x_bnd, dtype=torch.float),
-            edge_index_A=torch.tensor(edge_index_L, dtype=torch.long),
             x_ang=torch.tensor(x_ang, dtype=torch.float),
-            mask_dih_ang=torch.tensor(mask_dih_ang, dtype=torch.bool),
+            mask_dih_ang=torch.tensor(mask_dih_ang, dtype=torch.bool)
+        )
+    else:
+        edge_index_A = np.hstack([edge_index_bnd_ang])
+        x_ang = np.concatenate([x_bnd_ang])
+        mask_dih_ang = [False] * len(x_bnd_ang)
+
+        data = MolData(
+            edge_index_G=torch.tensor(edge_index_G, dtype=torch.long),
+            edge_index_A=torch.tensor(edge_index_A, dtype=torch.long),
+            x_atm=torch.tensor(x_atm, dtype=torch.float),
+            x_bnd=torch.tensor(x_bnd, dtype=torch.float),
+            x_ang=torch.tensor(x_ang, dtype=torch.float),
+            mask_dih_ang=torch.tensor(mask_dih_ang, dtype=torch.bool)
         )
 
     return data
