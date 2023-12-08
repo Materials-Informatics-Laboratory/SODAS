@@ -1,6 +1,8 @@
 # SODAS
 Toolkit for the characterization of atomistic phase trajectories
 
+- `sodas` allows for the conversion of atomic graphs (in the form of the graph + line graph method known as ALIGNN) to a spatio-temperally resolved latent space. Useful for understanding structural trnaisitons during atomistic simulations. The projection scheme allows for the spatial and temporal characterization of structure during a transition (otherwise known as a reaction coordinate). `sodas` can tell you how similar structures are to one another, as well as quantify their evolution through time by labelling each structure during a transition based on how far it is located in the latent space from know end points. Note, each latent space projection scheme you choose will vary, ex: PCA may give different results than UMAP. 
+
 ![Screenshot](https://github.com/Materials-Informatics-Laboratory/SODAS/blob/main/method.png?raw=true)
 
 ## Installation
@@ -27,7 +29,7 @@ pip uninstall sodas
 
 ## How to use
 
-`sodas` is intended to be a plug-and-play framework where you provide data in the form as an `ase` atoms object and sodas++ does the rest. You have full control over the ALIGNN and UMAP projections through the sodas class.
+`sodas` is intended to be a plug-and-play framework where you provide data in the form as an `ase` atoms object and sodas++ does the rest. You have full control over the ALIGNN and the data projections through the sodas class.
 
 - The `src` folder contains the source code.
 - The `example` folder contains an example for how to use SODAS++ to characterize an Al melt molecular dynamics simulation.
