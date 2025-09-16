@@ -1,5 +1,5 @@
 # SODAS
-SODAS has been integrated into https://github.com/Materials-Informatics-Laboratory/Catalyst and is no longer updated as a standalone package. Please use Catalyst for the most recent version of SODAS.
+SODAS has been integrated into https://github.com/Materials-Informatics-Laboratory/Catalyst and is no longer supported as a standalone package. Please use Catalyst for the most recent version of SODAS.
 
 ## Citing SODAS
 
